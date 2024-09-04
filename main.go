@@ -62,8 +62,6 @@ func main() {
 	r.GET("/logout", authMiddleware.LogoutHandler)
 	r.GET("/refresh_token", authMiddleware.RefreshHandler)
 
-	r.GET("/users", api.AllUser)
-
 	// Auth Group
 	auth := r.Group("/auth")
 	auth.Use(authMiddleware.MiddlewareFunc())
@@ -72,6 +70,22 @@ func main() {
 	auth.GET("/user/:userId/me", api.Me)
 	auth.PUT("/user/:userId", api.UpdateUser)
 	auth.DELETE("/user/:userId", api.DeleteUser)
+
+	// add/remove connection APIs
+	auth.POST("/user/:userId/addConnection", api.AddConnection)
+	auth.DELETE("/user/:userId/removeConnection", api.RemoveConnection)
+
+	// Post APIs
+	auth.GET("/user/:userId/posts", api.FetchPosts)
+	auth.POST("/user/:userId/post", api.CreatePost)
+	auth.PUT("/user/:userId/post/:postId", api.UpdatePost)
+	auth.DELETE("/user/:userId/post/:postId", api.DeletePost)
+
+	// Post comment APIs
+	auth.GET("/user/:userId/post/:postId/comments", api.FetchPostComments)
+	auth.POST("/user/:userId/post/:postId", api.CreatePostComment)
+	auth.PUT("/user/:userId/post/:postId/comment/:postCommentId", api.UpdatePostComment)
+	auth.DELETE("/user/:userId/post/:postId/comment/:postCommentId", api.DeletePostComment)
 
 	// Starting server
 	if err := r.Run(":8000"); err != nil {
