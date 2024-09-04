@@ -11,31 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	STUDENT int = 1
-	TEACHER int = 2
-)
-
-func ValidateUserType(userType int) string {
-	if userType == TEACHER {
-		return "teacher"
-	} else if userType == STUDENT {
-		return "student"
-	} else {
-		return ""
-	}
-}
-
-func GetUserType(userType string) int {
-	if userType == "teacher" {
-		return TEACHER
-	} else if userType == "student" {
-		return STUDENT
-	} else {
-		return 0
-	}
-}
-
 type UserCreateSchema struct {
 	FirstName string `json:"first_name" form:"first_name"`
 	LastName  string `json:"last_name" form:"last_name"`
@@ -296,4 +271,16 @@ func FetchAllUsers(uuidString string) ([]UserResponseSchema, int64, error) {
 
 	logger.Logger.Info("MODELS :: Rows ", zap.Any("data", rows))
 	return userData, count, nil
+}
+
+func InsertUserLoginHistory(uuidString string, userId int64, ipaddress string) (int64, error) {
+	query := `INSERT INTO 
+				user_login_history
+					(user_id, login_at, ip_address)
+			VALUES
+				($1, $2, $3)
+			RETURNING id`
+	queryToExecute := QueryStructToExecute{Query: query}
+	id, err := queryToExecute.InsertOrUpdateOperations(uuidString, userId, time.Now().UTC(), ipaddress)
+	return id, err
 }

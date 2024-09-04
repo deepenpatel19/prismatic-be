@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strconv"
+
 	"github.com/deepenpatel19/prismatic-be/core"
 	"github.com/deepenpatel19/prismatic-be/logger"
 	"github.com/deepenpatel19/prismatic-be/models"
@@ -134,20 +136,74 @@ func DeleteUser(c *gin.Context) {
 	})
 }
 
-func AllUser(c *gin.Context) {
+func AddConnection(c *gin.Context) {
 	uuidString := utils.GetUUID()
 	c.Header("X-REQUEST-ID", uuidString)
 
-	data, count, err := models.FetchAllUsers(uuidString)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"message": "something went wrong",
-		})
+	var uri schemas.URI
+	if err := c.ShouldBindUri(&uri); err != nil {
+		logger.Logger.Error("API :: Error while uri binding", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"message": data,
-		"count":   count,
+	friendIdStr := c.PostForm("friendId")
+	var friendId int
+	friendId, err := strconv.Atoi(friendIdStr)
+	if err != nil {
+		logger.Logger.Error("API :: Error while parsing data from string to int", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
+		return
+	}
+
+	userConnection := models.UserConnection{
+		UserId:   uri.UserId,
+		FriendId: int64(friendId),
+	}
+	id, err := userConnection.Insert(uuidString)
+	if err != nil {
+		logger.Logger.Error("API :: Error while add friend connection", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
+		return
+	}
+	c.JSON(201, gin.H{
+		"message": id,
 	})
+
+}
+
+func RemoveConnection(c *gin.Context) {
+	uuidString := utils.GetUUID()
+	c.Header("X-REQUEST-ID", uuidString)
+
+	var uri schemas.URI
+	if err := c.ShouldBindUri(&uri); err != nil {
+		logger.Logger.Error("API :: Error while uri binding", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
+		return
+	}
+
+	friendIdStr := c.PostForm("friendId")
+	var friendId int
+	friendId, err := strconv.Atoi(friendIdStr)
+	if err != nil {
+		logger.Logger.Error("API :: Error while parsing data from string to int", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
+		return
+	}
+
+	userConnection := models.UserConnection{
+		UserId:   uri.UserId,
+		FriendId: int64(friendId),
+	}
+	id, err := userConnection.Remove(uuidString)
+	if err != nil {
+		logger.Logger.Error("API :: Error while remove friend connection", zap.Error(err), zap.String("requestId", uuidString))
+		c.JSON(400, gin.H{"message": err})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": id,
+	})
+
 }
