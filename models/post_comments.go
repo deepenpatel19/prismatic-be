@@ -37,20 +37,21 @@ func (data PostComment) Update(uuidString string, Id int64) (int64, error) {
 	query := fmt.Sprintf(`UPDATE 
 								post_comments
 							SET comment='%s'
-							WHERE id=%d
+							WHERE id=%d AND user_id=%d
 							RETURNING id`,
 		data.Comment,
 		Id,
+		data.UserId,
 	)
 	queryToExecute := QueryStructToExecute{Query: query}
 	id, err := queryToExecute.InsertOrUpdateOperations(uuidString)
 	return id, err
 }
 
-func DeletePostComment(uuidString string, Id int64) (bool, error) {
+func DeletePostComment(uuidString string, Id int64, userId int64) (bool, error) {
 	query := fmt.Sprintf(`DELETE 
 							post_comments
-						  WHERE id=%d`, Id)
+						  WHERE id=%d AND user_id=%d`, Id, userId)
 	queryToExecute := QueryStructToExecute{Query: query}
 	status, err := queryToExecute.DeleteOperation(uuidString)
 	return status, err
@@ -82,15 +83,11 @@ func FetchPostComments(uuidString string, limit int, offset int) ([]PostComment,
 		var singleData PostComment
 		jsonbody, err := json.Marshal(data)
 		if err != nil {
-			// do error check
-			// fmt.Println(err)
 			logger.Logger.Error("MODELS :: Post comment => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))
 			return postCommentData, count, err
 		}
 
 		if err := json.Unmarshal(jsonbody, &singleData); err != nil {
-			// do error check
-			// fmt.Println(err)
 			logger.Logger.Error("MODELS :: Post comment => Error while json unmarshalling", zap.Error(err), zap.String("requestId", uuidString))
 			return postCommentData, count, err
 		}

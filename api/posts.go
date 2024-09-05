@@ -33,6 +33,7 @@ func CreatePost(c *gin.Context) {
 		})
 		return
 	}
+	postData.UserId = uri.UserId
 
 	id, err := postData.Insert(uuidString)
 	if err != nil {
@@ -69,6 +70,7 @@ func UpdatePost(c *gin.Context) {
 		})
 		return
 	}
+	postData.UserId = uri.UserId
 
 	id, err := postData.Update(uuidString, uri.PostId)
 	if err != nil {
@@ -95,7 +97,7 @@ func DeletePost(c *gin.Context) {
 		return
 	}
 
-	status, err := models.DeletePost(uuidString, uri.PostId)
+	status, err := models.DeletePost(uuidString, uri.PostId, uri.UserId)
 	if err != nil {
 		logger.Logger.Error("API :: Error while delete post", zap.Error(err), zap.String("requestId", uuidString))
 		c.JSON(400, gin.H{

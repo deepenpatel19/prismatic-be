@@ -33,6 +33,7 @@ func CreatePostComment(c *gin.Context) {
 		})
 		return
 	}
+	postCommentData.UserId = uri.UserId
 
 	id, err := postCommentData.Insert(uuidString)
 	if err != nil {
@@ -70,6 +71,7 @@ func UpdatePostComment(c *gin.Context) {
 		})
 		return
 	}
+	postCommentData.UserId = uri.UserId
 
 	id, err := postCommentData.Update(uuidString, uri.PostCommentId)
 	if err != nil {
@@ -96,7 +98,7 @@ func DeletePostComment(c *gin.Context) {
 		return
 	}
 
-	status, err := models.DeletePostComment(uuidString, uri.PostCommentId)
+	status, err := models.DeletePostComment(uuidString, uri.PostCommentId, uri.UserId)
 	if err != nil {
 		logger.Logger.Error("API :: Error while delete post comment", zap.Error(err), zap.String("requestId", uuidString))
 		c.JSON(400, gin.H{
