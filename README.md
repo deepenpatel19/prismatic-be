@@ -14,3 +14,8 @@
 
 #### API endpoint collection
 [Postman Collection](./docs/prismatic.postman_collection.json)
+
+#### References
+- Gin => https://github.com/gin-gonic/gin
+- Timeout middleware => https://dev.to/jacobsngoodwin/13-gin-handler-timeout-middleware-4bhg
+- DB migration management => https://github.com/golang-migrate/migrate
