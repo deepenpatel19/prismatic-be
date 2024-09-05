@@ -1,0 +1,494 @@
+{
+	"info": {
+		"_postman_id": "6f28536f-0da1-4aef-bc4b-61316928d9ab",
+		"name": "prismatic",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19573491",
+		"_collection_link": "https://speeding-meteor-320134.postman.co/workspace/My-Workspace~3c0f68d8-3152-408d-87d2-9f5884e6d721/collection/19573491-6f28536f-0da1-4aef-bc4b-61316928d9ab?action=share&source=collection_link&creator=19573491"
+	},
+	"item": [
+		{
+			"name": "Create User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "first_name",
+							"value": "test",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "student",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "test.student@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "Test@123",
+							"type": "text"
+						},
+						{
+							"key": "type",
+							"value": "student",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/user",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Token",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "username",
+							"value": "test.user@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "Test@123",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/token",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update User",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "first_name",
+							"value": "test1",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "student",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete User",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/user/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "User - Me API",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/user/1/me",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"1",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add friend connection",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "friendId",
+							"value": "2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/addConnection",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"addConnection"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Remove friend connection",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "friendId",
+							"value": "2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/removeConnection",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"removeConnection"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add post",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "title",
+							"value": "First post",
+							"type": "text"
+						},
+						{
+							"key": "description",
+							"value": "post description",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update post",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "description",
+							"value": "update new desc",
+							"type": "text"
+						},
+						{
+							"key": "title",
+							"value": "New title",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post/{{post_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post",
+						"{{post_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Fetch posts",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/posts",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"posts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete post",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post/{{post_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post",
+						"{{post_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add post comment",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "comment",
+							"value": "test",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post/{{post_id}}/comment",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post",
+						"{{post_id}}",
+						"comment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Fetch post comments",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post/{{post_id}}/comments",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post",
+						"{{post_id}}",
+						"comments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update post comment",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "comment",
+							"value": "updated comment 1",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/user/{{user_id}}/post/{{post_id}}/comment/{{post_comment_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"user",
+						"{{user_id}}",
+						"post",
+						"{{post_id}}",
+						"comment",
+						"{{post_comment_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
