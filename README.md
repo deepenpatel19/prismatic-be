@@ -1,5 +1,5 @@
 # prismatic-be
-It is open source social media platform base backend.
+- It is open source repository which show case basic functionalities of social media platform.
 
 ### Installation
 - Is is developed using Go with 1.23.0 version.
