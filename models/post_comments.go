@@ -15,6 +15,13 @@ type PostComment struct {
 	Comment string `json:"comment" form:"comment" binding:"required"`
 }
 
+type PostCommentResponse struct {
+	Id        int64  `json:"id" form:"id"`
+	UserId    int64  `json:"user_id" form:"user_id"`
+	Comment   string `json:"comment" form:"comment" binding:"required"`
+	CreatedAt string `json:"created_at" form:"created_at"`
+}
+
 func (data PostComment) Insert(uuidString string) (int64, error) {
 	query := fmt.Sprintf(`INSERT INTO
 							post_comments
@@ -48,27 +55,28 @@ func (data PostComment) Update(uuidString string, Id int64) (int64, error) {
 	return id, err
 }
 
-func DeletePostComment(uuidString string, Id int64, userId int64) (bool, error) {
+func DeletePostComment(uuidString string, Id int64, userId int64, postId int64) (bool, error) {
 	query := fmt.Sprintf(`DELETE 
-							post_comments
-						  WHERE id=%d AND user_id=%d`, Id, userId)
+							FROM post_comments
+						  WHERE id=%d AND user_id=%d AND post_id=%d`, Id, userId, postId)
 	queryToExecute := QueryStructToExecute{Query: query}
 	status, err := queryToExecute.DeleteOperation(uuidString)
 	return status, err
 }
 
-func FetchPostComments(uuidString string, limit int, offset int) ([]PostComment, int64, error) {
+func FetchPostComments(uuidString string, limit int, offset int) ([]PostCommentResponse, int64, error) {
 	var rows []map[string]any
 	var count int64
 	var err error
-	var postCommentData []PostComment
+	var postCommentData []PostCommentResponse
 
 	query := fmt.Sprintf(`SELECT 
 							id,
 							user_id,
 							post_id,
 							comment,
-							created_at
+							created_at,
+							COUNT(*) OVER() as count
 						  FROM
 						  	post_comments
 						  ORDER BY id DESC
@@ -80,7 +88,7 @@ func FetchPostComments(uuidString string, limit int, offset int) ([]PostComment,
 	}
 
 	for _, data := range rows {
-		var singleData PostComment
+		var singleData PostCommentResponse
 		jsonbody, err := json.Marshal(data)
 		if err != nil {
 			logger.Logger.Error("MODELS :: Post comment => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))

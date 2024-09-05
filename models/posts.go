@@ -16,6 +16,15 @@ type Post struct {
 	File        string `json:"file" form:"file"`
 }
 
+type PostResponse struct {
+	Id          int64  `json:"id" form:"id"`
+	UserId      int64  `json:"user_id" form:"user_id"`
+	Title       string `json:"title" form:"title" binding:"required"`
+	Description string `json:"description" form:"description"`
+	File        string `json:"file" form:"file"`
+	CreatedAt   string `json:"created_at" form:"created_at"`
+}
+
 func (data Post) Insert(uuidString string) (int64, error) {
 	query := fmt.Sprintf(`INSERT INTO
 				posts
@@ -39,12 +48,13 @@ func (data Post) Insert(uuidString string) (int64, error) {
 func (data Post) Update(uuidString string, Id int64) (int64, error) {
 	query := fmt.Sprintf(`UPDATE 
 								posts
-							SET title='%s', description='%s', file='%s'
+							SET title='%s', description='%s', file='%s', updated_at='%s'
 							WHERE id=%d AND user_id=%d
 							RETURNING id`,
 		data.Title,
 		data.Description,
 		data.File,
+		time.Now().UTC().Format(time.RFC3339),
 		Id,
 		data.UserId,
 	)
@@ -62,18 +72,20 @@ func DeletePost(uuidString string, Id int64, userId int64) (bool, error) {
 	return status, err
 }
 
-func FetchPosts(uuidString string, limit int, offset int) ([]Post, int64, error) {
+func FetchPosts(uuidString string, limit int, offset int) ([]PostResponse, int64, error) {
 	var rows []map[string]any
 	var count int64
 	var err error
-	var postData []Post
+	var postData []PostResponse
 
 	query := fmt.Sprintf(`SELECT 
 							id,
+							user_id,
 							title,
 							description,
 							file,
-							created_at
+							created_at,
+							COUNT(*) OVER() as count
 						  FROM
 						  	posts
 						  ORDER BY id DESC
@@ -85,7 +97,7 @@ func FetchPosts(uuidString string, limit int, offset int) ([]Post, int64, error)
 	}
 
 	for _, data := range rows {
-		var singleData Post
+		var singleData PostResponse
 		jsonbody, err := json.Marshal(data)
 		if err != nil {
 			logger.Logger.Error("MODELS :: Post => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))
