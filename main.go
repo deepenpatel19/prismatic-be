@@ -20,7 +20,6 @@ import (
 	"github.com/deepenpatel19/prismatic-be/core"
 	"github.com/deepenpatel19/prismatic-be/logger"
 
-	// "github.com/prismatic-be/middleware"
 	"github.com/deepenpatel19/prismatic-be/models"
 )
 
@@ -49,7 +48,7 @@ func main() {
 			"message": "OK",
 		})
 	})
-
+	r.GET("/", Hello)
 	r.POST("/user", api.CreateUser) // Open endpoint
 
 	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
@@ -73,7 +72,7 @@ func main() {
 
 	// add/remove connection APIs
 	auth.POST("/user/:userId/addConnection", api.AddConnection)
-	auth.DELETE("/user/:userId/removeConnection", api.RemoveConnection)
+	auth.POST("/user/:userId/removeConnection", api.RemoveConnection)
 
 	// Post APIs
 	auth.GET("/user/:userId/posts", api.FetchPosts)
@@ -83,7 +82,7 @@ func main() {
 
 	// Post comment APIs
 	auth.GET("/user/:userId/post/:postId/comments", api.FetchPostComments)
-	auth.POST("/user/:userId/post/:postId", api.CreatePostComment)
+	auth.POST("/user/:userId/post/:postId/comment", api.CreatePostComment)
 	auth.PUT("/user/:userId/post/:postId/comment/:postCommentId", api.UpdatePostComment)
 	auth.DELETE("/user/:userId/post/:postId/comment/:postCommentId", api.DeletePostComment)
 
