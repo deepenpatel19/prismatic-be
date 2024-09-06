@@ -128,7 +128,7 @@ func FetchPostsV1(uuidString string, limit int, offset int) ([]PostResponse, int
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.TxAccessMode(pgx.ReadCommitted)})
 	if err != nil {
 		logger.Logger.Error("MODELS :: Error while begin transaction", zap.Error(err), zap.String("requestId", uuidString))
 		return nil, count, err
