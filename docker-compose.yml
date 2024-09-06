@@ -1,0 +1,66 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    platform: linux/amd64
+    # command: sh -c "go build main.go && go run main.go"
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/app
+    # env_file:
+    #   - .env
+    links:
+      - database
+    depends_on:
+      - database
+    restart: 'always'
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '0.0001'
+          memory: 20M
+
+  database:
+    image: postgres:latest
+    restart: always
+    platform: linux/amd64
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=prismatic
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    ports:
+      - '5432:5432'
+    volumes:
+      - golang-docker-data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '0.0001'
+          memory: 20M
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: test@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+# persisted storage
+volumes:
+  golang-docker-data:
+  pgadmin-data:

@@ -123,9 +123,13 @@ func FetchPosts(c *gin.Context) {
 
 	limitQueryStr := c.DefaultQuery("limit", "10")
 	offsetQueryStr := c.DefaultQuery("offset", "0")
+	queryVersion := c.DefaultQuery("query_version", "v0")
 
 	var limit int
 	var offset int
+	var postData []models.PostResponse
+	var count int64
+	var err error
 
 	limit, _ = strconv.Atoi(limitQueryStr)
 	offset, _ = strconv.Atoi(offsetQueryStr)
@@ -136,7 +140,12 @@ func FetchPosts(c *gin.Context) {
 		limit = 10
 	}
 
-	postData, count, err := models.FetchPosts(uuidString, limit, offset)
+	if queryVersion == "v1" {
+		postData, count, err = models.FetchPostsV1(uuidString, limit, offset)
+	} else {
+		postData, count, err = models.FetchPosts(uuidString, limit, offset)
+	}
+
 	if err != nil {
 		logger.Logger.Error("API :: Error while fetch posts", zap.Error(err), zap.String("requestId", uuidString))
 		c.JSON(400, gin.H{
