@@ -52,8 +52,8 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		userEmail := loginVals.Username
 		password := loginVals.Password
 
-		// userDataFromDb := models.FetchUserForAuth(userEmail)
-		userDataFromDb := models.FetchUserForAuthV1(userEmail)
+		userDataFromDb := models.FetchUserForAuth(userEmail)
+		// userDataFromDb := models.FetchUserForAuthV1(userEmail)
 		if userDataFromDb.Id == 0 {
 			return "", errors.New("no account found")
 		}
@@ -72,8 +72,8 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 func authorizator() func(data interface{}, c *gin.Context) bool {
 	return func(data interface{}, c *gin.Context) bool {
 		if v, ok := data.(*models.UserSchema); ok {
-			// userDataFromDb := models.FetchUserForAuth(v.Email)
-			userDataFromDb := models.FetchUserForAuthV1(v.Email)
+			userDataFromDb := models.FetchUserForAuth(v.Email)
+			// userDataFromDb := models.FetchUserForAuthV1(v.Email)
 			logger.Logger.Info("AUTH :: authorizator ", zap.Any("data", userDataFromDb))
 			return userDataFromDb.Id != 0
 		}

@@ -69,7 +69,6 @@ func Me(c *gin.Context) {
 		c.JSON(400, gin.H{"message": err})
 		return
 	}
-
 	data := models.FetchUserForMeV1(uuidString, uri.UserId)
 	c.JSON(200, gin.H{
 		"message": data,
