@@ -1,11 +1,14 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/deepenpatel19/prismatic-be/core"
 	"github.com/deepenpatel19/prismatic-be/logger"
+	pgx "github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -113,4 +116,78 @@ func FetchPosts(uuidString string, limit int, offset int) ([]PostResponse, int64
 	}
 
 	return postData, count, err
+}
+
+func FetchPostsV1(uuidString string, limit int, offset int) ([]PostResponse, int64, error) {
+	// var rows []map[string]any
+	var count int64
+	var err error
+	var postData []PostResponse
+
+	dbConnection := DbPool()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	defer cancel()
+
+	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadWrite})
+	if err != nil {
+		logger.Logger.Error("MODELS :: Error while begin transaction", zap.Error(err), zap.String("requestId", uuidString))
+		return nil, count, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	query := fmt.Sprintf(`SELECT 
+							id,
+							user_id,
+							title,
+							description,
+							file,
+							created_at,
+							COUNT(*) OVER() as count
+						  FROM
+						  	posts
+						  ORDER BY id DESC
+						  LIMIT %d OFFSET %d`, limit, offset)
+
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		logger.Logger.Error("MODELS :: Error while executing query.",
+			zap.String("requestId", uuidString),
+			zap.Error(err),
+		)
+		return postData, count, err
+	}
+
+	defer rows.Close()
+	logger.Logger.Info("MODELS :: Rows fetched ", zap.Any("rows", rows), zap.Error(err))
+
+	for rows.Next() {
+
+		var singleData PostResponse
+
+		err = rows.Scan(
+			&singleData.Id,
+			&singleData.UserId,
+			&singleData.Title,
+			&singleData.Description,
+			&singleData.File,
+			&singleData.CreatedAt,
+			&count,
+		)
+		if err != nil {
+			logger.Logger.Error("MODELS :: Error while scanning values", zap.String("requestId", uuidString), zap.Error(err))
+			return postData, count, err
+		}
+
+		postData = append(postData, singleData)
+	}
+
+	return postData, count, nil
+
 }

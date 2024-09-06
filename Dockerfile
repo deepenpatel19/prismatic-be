@@ -8,7 +8,7 @@ RUN GOOS=linux go build -ldflags="-s -w" -o ./bin/web-app ./main.go
 
 FROM alpine:3.20
 RUN export CGO_CFLAGS_ALLOW='-Xpreprocessor'
-RUN apk --no-cache add ca-certificates pkgconfig
+RUN apk --no-cache add ca-certificates
 WORKDIR /usr/bin
 COPY --from=build /go/src/app/bin /go/bin
 COPY ./migrations/ /usr/bin/migrations/
