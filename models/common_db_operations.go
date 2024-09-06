@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/deepenpatel19/prismatic-be/core"
 	"github.com/deepenpatel19/prismatic-be/logger"
 	pgx "github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
@@ -22,7 +21,7 @@ func (query QueryStructToExecute) InsertOrUpdateOperations(uuidString string, ar
 	var id int64
 	dbConnection := DbPool()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadWrite})
@@ -54,7 +53,7 @@ func (query QueryStructToExecute) DeleteOperation(uuidString string) (bool, erro
 	logger.Logger.Info("MODELS :: Will do delete operation.", zap.String("requestId", uuidString), zap.String("query", query.Query))
 	dbConnection := DbPool()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadWrite})
@@ -79,7 +78,7 @@ func (query QueryStructToExecute) InsertOrUpdateMultipleQueries(uuidString strin
 	var id int64
 	dbConnection := DbPool()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadWrite})
@@ -117,7 +116,7 @@ func (query QueryStructToExecute) FetchRows(uuidString string) ([]map[string]any
 	// var intConversion bool
 	dbConnection := DbPool()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})

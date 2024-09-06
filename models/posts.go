@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/deepenpatel19/prismatic-be/core"
 	"github.com/deepenpatel19/prismatic-be/logger"
 	pgx "github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
@@ -126,7 +125,7 @@ func FetchPostsV1(uuidString string, limit int, offset int) ([]PostResponse, int
 
 	dbConnection := DbPool()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(core.Config.DBQueryTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
