@@ -1,5 +1,5 @@
 # prismatic-be
-- It is open source repository which show case basic functionalities of social media platform.
+- Prismatic is a cutting-edge social media platform designed to provide user engagement through dynamic content feeds and seamless user experiences. This project showcases my expertise in building high-performance, scalable applications using *Go* while serving as a playground to collaborate and learn with fellow developers.
 
 ### Installation
 - Is is developed using Go with 1.23.0 version.
