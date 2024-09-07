@@ -1,11 +1,12 @@
 package models
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/deepenpatel19/prismatic-be/logger"
+	pgx "github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +19,7 @@ type PostComment struct {
 type PostCommentResponse struct {
 	Id        int64  `json:"id" form:"id"`
 	UserId    int64  `json:"user_id" form:"user_id"`
+	PostId    int64  `json:"post_id" form:"post_id"`
 	Comment   string `json:"comment" form:"comment" binding:"required"`
 	CreatedAt string `json:"created_at" form:"created_at"`
 }
@@ -65,10 +67,27 @@ func DeletePostComment(uuidString string, Id int64, userId int64, postId int64) 
 }
 
 func FetchPostComments(uuidString string, limit int, offset int) ([]PostCommentResponse, int64, error) {
-	var rows []map[string]any
 	var count int64
 	var err error
 	var postCommentData []PostCommentResponse
+
+	dbConnection := DbPool()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	tx, err := dbConnection.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		logger.Logger.Error("MODELS :: Error while begin transaction", zap.Error(err), zap.String("requestId", uuidString))
+		return nil, count, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
 
 	query := fmt.Sprintf(`SELECT 
 							id,
@@ -81,22 +100,33 @@ func FetchPostComments(uuidString string, limit int, offset int) ([]PostCommentR
 						  	post_comments
 						  ORDER BY id DESC
 						  LIMIT %d OFFSET %d`, limit, offset)
-	queryToExecute := QueryStructToExecute{Query: query}
-	rows, count, err = queryToExecute.FetchRows(uuidString)
+
+	rows, err := tx.Query(ctx, query)
 	if err != nil {
+		logger.Logger.Error("MODELS :: Error while executing query.",
+			zap.String("requestId", uuidString),
+			zap.Error(err),
+		)
 		return postCommentData, count, err
 	}
 
-	for _, data := range rows {
-		var singleData PostCommentResponse
-		jsonbody, err := json.Marshal(data)
-		if err != nil {
-			logger.Logger.Error("MODELS :: Post comment => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))
-			return postCommentData, count, err
-		}
+	defer rows.Close()
+	logger.Logger.Info("MODELS :: Rows fetched ", zap.Any("rows", rows), zap.Error(err))
 
-		if err := json.Unmarshal(jsonbody, &singleData); err != nil {
-			logger.Logger.Error("MODELS :: Post comment => Error while json unmarshalling", zap.Error(err), zap.String("requestId", uuidString))
+	for rows.Next() {
+
+		var singleData PostCommentResponse
+
+		err = rows.Scan(
+			&singleData.Id,
+			&singleData.UserId,
+			&singleData.PostId,
+			&singleData.Comment,
+			&singleData.CreatedAt,
+			&count,
+		)
+		if err != nil {
+			logger.Logger.Error("MODELS :: Error while scanning values", zap.String("requestId", uuidString), zap.Error(err))
 			return postCommentData, count, err
 		}
 
