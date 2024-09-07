@@ -4,6 +4,7 @@
 ### Installation
 - Is is developed using Go with 1.23.0 version.
 - You can install dependencies by executing command `go install`.
+- you can build docker image by executing command `docker build -t prismatic-be .`
 
 #### Features
 - CRUD operations for user, friend management, post & comments.
