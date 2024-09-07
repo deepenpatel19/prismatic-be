@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -73,50 +74,57 @@ func DeletePost(uuidString string, Id int64, userId int64) (bool, error) {
 	return status, err
 }
 
-// func FetchPosts(uuidString string, limit int, offset int) ([]PostResponse, int64, error) {
-// 	var rows []map[string]any
-// 	var count int64
-// 	var err error
-// 	var postData []PostResponse
+func FetchPosts(uuidString string, userId int64, limit int, offset int) ([]PostResponse, int64, error) {
+	var rows []map[string]any
+	var count int64
+	var err error
+	var postData []PostResponse
 
-// 	query := fmt.Sprintf(`SELECT
-// 							id,
-// 							user_id,
-// 							title,
-// 							description,
-// 							file,
-// 							created_at,
-// 							COUNT(*) OVER() as count
-// 						  FROM
-// 						  	posts
-// 						  ORDER BY id DESC
-// 						  LIMIT %d OFFSET %d`, limit, offset)
-// 	queryToExecute := QueryStructToExecute{Query: query}
-// 	rows, count, err = queryToExecute.FetchRows(uuidString)
-// 	if err != nil {
-// 		return postData, count, err
-// 	}
+	query := fmt.Sprintf(`SELECT
+							id,
+							user_id,
+							title,
+							description,
+							file,
+							created_at,
+							COUNT(*) OVER() as count
+						  FROM
+						  	posts
+						  WHERE 
+								(user_id = %d
+							      OR 
+								  user_id IN (
+								  				SELECT friend_id FROM user_connections WHERE user_id = %d
+								  			)
+								)
+						  ORDER BY id DESC
+						  LIMIT %d OFFSET %d`, userId, userId, limit, offset)
+	queryToExecute := QueryStructToExecute{Query: query}
+	rows, count, err = queryToExecute.FetchRows(uuidString)
+	if err != nil {
+		return postData, count, err
+	}
 
-// 	for _, data := range rows {
-// 		var singleData PostResponse
-// 		jsonbody, err := json.Marshal(data)
-// 		if err != nil {
-// 			logger.Logger.Error("MODELS :: Post => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))
-// 			return postData, count, err
-// 		}
+	for _, data := range rows {
+		var singleData PostResponse
+		jsonbody, err := json.Marshal(data)
+		if err != nil {
+			logger.Logger.Error("MODELS :: Post => Error while json marshalling", zap.Error(err), zap.String("requestId", uuidString))
+			return postData, count, err
+		}
 
-// 		if err := json.Unmarshal(jsonbody, &singleData); err != nil {
-// 			logger.Logger.Error("MODELS :: Post => Error while json unmarshalling", zap.Error(err), zap.String("requestId", uuidString))
-// 			return postData, count, err
-// 		}
+		if err := json.Unmarshal(jsonbody, &singleData); err != nil {
+			logger.Logger.Error("MODELS :: Post => Error while json unmarshalling", zap.Error(err), zap.String("requestId", uuidString))
+			return postData, count, err
+		}
 
-// 		postData = append(postData, singleData)
-// 	}
+		postData = append(postData, singleData)
+	}
 
-// 	return postData, count, err
-// }
+	return postData, count, err
+}
 
-func FetchPostsV1(uuidString string, limit int, offset int) ([]PostResponse, int64, error) {
+func FetchPostsV1(uuidString string, userId int64, limit int, offset int) ([]PostResponse, int64, error) {
 	// var rows []map[string]any
 	var count int64
 	var err error
@@ -150,8 +158,15 @@ func FetchPostsV1(uuidString string, limit int, offset int) ([]PostResponse, int
 							COUNT(*) OVER() as count
 						  FROM
 						  	posts
+						  WHERE 
+								(user_id = %d
+							      OR 
+								  user_id IN (
+								  				SELECT friend_id FROM user_connections WHERE user_id = %d
+								  			)
+								)
 						  ORDER BY id DESC
-						  LIMIT %d OFFSET %d`, limit, offset)
+						  LIMIT %d OFFSET %d`, userId, userId, limit, offset)
 
 	rows, err := tx.Query(ctx, query)
 	if err != nil {
