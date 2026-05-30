@@ -1,0 +1,161 @@
+name: CI/CD - Staging
+
+on:
+  push:
+    branches: [staging, main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+      image_full: ${{ steps.tag.outputs.full }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          TAG="sha-${GITHUB_SHA::12}"
+          # GHCR requires lowercase image names
+          IMAGE_LOWER=$(echo "${{ github.repository }}/backend" | tr '[:upper:]' '[:lower:]')
+          FULL="${{ env.REGISTRY }}/${IMAGE_LOWER}:${TAG}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "full=${FULL}" >> $GITHUB_OUTPUT
+          echo "Will tag as: ${FULL}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.tag.outputs.full }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/backend:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.tag.outputs.tag }}
+            COMMIT=${{ github.sha }}
+
+  deploy:
+    name: Deploy to staging VM
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync stack file to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: root
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: "stacks/docker-stack.staging.yml,stacks/traefik/traefik.yml,stacks/traefik/dynamic.yml"
+          target: "/opt/"
+
+      - name: Deploy stack
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: root
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          timeout: 120s
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            cd /opt/stacks
+
+            # BACKEND_TAG is what the stack file uses to pick the image version.
+            # We pass the commit SHA so the deploy is traceable.
+            export BACKEND_TAG="${{ needs.build.outputs.image_tag }}"
+
+            echo "==> Deploying with BACKEND_TAG=$BACKEND_TAG"
+            docker stack deploy \
+              -c docker-stack.staging.yml \
+              --with-registry-auth \
+              app
+
+            echo "==> Current services:"
+            docker service ls
+
+            echo "==> Recent task placement:"
+            docker stack ps app --no-trunc 2>&1 | head -30
+
+      - name: Wait for rollout
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: root
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            # Poll the service until update is complete (max ~2 minutes)
+            for i in {1..24}; do
+              STATE=$(docker service inspect app_backend \
+                --format '{{.UpdateStatus.State}}' 2>/dev/null || echo "unknown")
+              echo "  Update state: $STATE (attempt $i/24)"
+              
+              if [ "$STATE" = "completed" ] || [ "$STATE" = "<no value>" ]; then
+                echo "==> Rollout complete"
+                exit 0
+              fi
+              
+              if [ "$STATE" = "paused" ] || [ "$STATE" = "rollback_completed" ]; then
+                echo "==> Rollout failed or rolled back"
+                docker service ps app_backend --no-trunc | head -10
+                exit 1
+              fi
+              
+              sleep 5
+            done
+
+            echo "==> Timed out waiting for rollout"
+            docker service ps app_backend --no-trunc | head -10
+            exit 1
+
+      - name: Smoke test
+        run: |
+          # If you're exposing port 8000 directly for testing:
+          curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
+            http://${{ secrets.STAGING_HOST }}:8000/health \
+            && echo "Health check passed" \
+            || (echo "Health check FAILED"; exit 1)
+
+          # If you're behind Traefik with Cloudflare, use:
+          # curl -fsS https://test-vm.pictopreserve.com/health
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Staging deploy failed at commit ${{ github.sha }}"
+          # Add Slack/Discord webhook notification here if you want

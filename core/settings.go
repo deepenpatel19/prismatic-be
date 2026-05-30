@@ -50,5 +50,22 @@ func ReadEnvFile() {
 	)
 
 	Config.DBQueryTimeout = 60
+}
 
+func ReadConfig() schemas.ProjectConfiguration {
+	Config.DBString = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		MustGet("DB_USER"),
+		MustGet("DB_PASSWORD"),
+		MustGet("DB_HOST"),
+		MustGet("DB_PORT"),
+		MustGet("DB_NAME"),
+		MustGet("DB_SSLMODE"),
+	)
+	Config.DBQueryTimeout = 60
+	Config.Environment = os.Getenv("ENVIRONMENT")
+	Config.PasswordHashCost = 14
+	Config.AuthRealm = MustGet("AUTH_REALM")
+	Config.AuthSecretKey = MustGet("AUTH_SECRET_KEY")
+
+	return Config
 }

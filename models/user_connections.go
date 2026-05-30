@@ -12,9 +12,10 @@ type UserConnection struct {
 }
 
 func (data UserConnection) Insert(uuidString string) (int64, error) {
+	// TODO: Add unique key on user_id & friend_id
 	query := `INSERT INTO 
 				user_connections
-					(user_id, friend_at, created_at)
+					(user_id, friend_id, created_at)
 			VALUES
 				($1, $2, $3)
 			RETURNING id`

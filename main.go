@@ -28,7 +28,12 @@ func Hello(c *gin.Context) {
 }
 
 func main() {
-	core.ReadEnvFile()        // Configure ENV File
+	if os.Getenv("ENVIRONMENT") != "local" {
+		core.ReadConfig() // Configure from env vars (production)
+	} else {
+		core.ReadEnvFile() // Configure ENV File
+	}
+
 	logger.LoggerInit()       // Configure Logger
 	models.RunMigrations()    // Run migrations to sync db schema related changes
 	models.CreateConnection() // Create DB connection pool
