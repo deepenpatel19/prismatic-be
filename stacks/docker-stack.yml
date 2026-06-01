@@ -1,0 +1,248 @@
+version: "3.9"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  edge:
+    driver: overlay
+    driver_opts:
+      encrypted: "true"
+  internal:
+    driver: overlay
+    driver_opts:
+      encrypted: "true"
+
+# =============================================================================
+# Volumes (data persists across container restarts)
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  traefik_acme: # stores the Let's Encrypt cert
+    driver: local
+
+# =============================================================================
+# Secrets — pre-created via docker secret create
+# =============================================================================
+secrets:
+  db_password:
+    external: true
+  redis_password:
+    external: true
+  auth_secret_key:
+    external: true
+# =============================================================================
+# Services
+# =============================================================================
+services:
+  # ---------------------------------------------------------------------------
+  # Traefik — reverse proxy with Let's Encrypt
+  # ---------------------------------------------------------------------------
+
+  traefik:
+    image: traefik:v2.11
+
+    command:
+      - --providers.docker
+      - --providers.docker.swarmMode=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=app_edge
+      - --providers.docker.watch=true
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+
+      - --certificatesresolvers.le.acme.email=test@gmail.com
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+
+      - --log.level=INFO
+      - --accesslog=true
+      - --api.dashboard=false
+
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+
+    networks:
+      - edge
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_acme:/letsencrypt
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Backend
+  # ---------------------------------------------------------------------------
+  backend:
+    image: ghcr.io/deepenpatel19/prismatic-be/backend:${BACKEND_TAG:?BACKEND_TAG required}
+
+    networks:
+      - edge
+      - internal
+
+    environment:
+      APP_ENV: staging
+      ENVIRONMENT: staging
+      LOG_LEVEL: debug
+      PORT: "8000"
+
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: appdb
+      DB_USER: appuser
+      DB_SSLMODE: disable
+      DB_PASSWORD_FILE: /run/secrets/db_password
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+
+      # AUTH
+      AUTH_REALM: "prismatic"
+      AUTH_SECRET_KEY_FILE: /run/secrets/auth_secret_key
+
+    secrets:
+      - db_password
+      - redis_password
+      - auth_secret_key
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+        monitor: 30s
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.2"
+          memory: 128M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=app_edge"
+
+        - "traefik.http.routers.backend.rule=Host(`test-vm.pictopreserve.com`)"
+        - "traefik.http.routers.backend.entrypoints=websecure"
+        - "traefik.http.routers.backend.tls=true"
+        - "traefik.http.routers.backend.tls.certresolver=le"
+
+        - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+  # ---------------------------------------------------------------------------
+  # Postgres
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+
+    networks:
+      - internal
+
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    secrets:
+      - db_password
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+
+    networks:
+      - internal
+
+    command:
+      - sh
+      - -c
+      - |
+        exec redis-server \
+          --requirepass "$$(cat /run/secrets/redis_password)" \
+          --appendonly yes
+
+    secrets:
+      - redis_password
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'redis-cli -a "$$(cat /run/secrets/redis_password)" ping | grep -q PONG'
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
