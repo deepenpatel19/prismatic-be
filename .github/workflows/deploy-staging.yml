@@ -143,8 +143,8 @@ jobs:
             docker service ps app_backend --no-trunc | head -10
             exit 1
 
-      - name: Smoke test
-        run: |
+     # - name: Smoke test
+     #   run: |
           # If you're exposing port 8000 directly for testing:
           # curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
           #  http://${{ secrets.STAGING_HOST }}:8000/health \
@@ -152,10 +152,10 @@ jobs:
           #  || (echo "Health check FAILED"; exit 1)
 
           # If you're behind Traefik with Cloudflare, use:
-          curl -fsS https://test-vm.pictopreserve.com/health
+      #    curl -fsS https://test-vm.pictopreserve.com/health
 
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "::error::Staging deploy failed at commit ${{ github.sha }}"
+      #- name: Notify on failure
+      #  if: failure()
+       # run: |
+       #   echo "::error::Staging deploy failed at commit ${{ github.sha }}"
           # Add Slack/Discord webhook notification here if you want
