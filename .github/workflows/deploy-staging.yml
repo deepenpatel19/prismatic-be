@@ -101,7 +101,7 @@ jobs:
 
             echo "==> Deploying with BACKEND_TAG=$BACKEND_TAG"
             docker stack deploy \
-              -c docker-stack.staging.yml \
+              -c docker-stack.yml \
               --with-registry-auth \
               app
 
