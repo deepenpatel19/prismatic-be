@@ -79,8 +79,8 @@ jobs:
           username: root
           port: ${{ secrets.STAGING_SSH_PORT || 22 }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          source: "docker-stack.yml"
-          target: "/opt/stacks/"
+          source: "stacks/docker-stack.yml"
+          target: "/opt/"
 
       - name: Deploy stack
         uses: appleboy/ssh-action@v1
