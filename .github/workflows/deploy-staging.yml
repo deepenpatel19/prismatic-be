@@ -79,7 +79,7 @@ jobs:
           username: root
           port: ${{ secrets.STAGING_SSH_PORT || 22 }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          source: "stacks/docker-stack.staging.yml,stacks/traefik/traefik.yml,stacks/traefik/dynamic.yml"
+          source: "stacks/docker-stack.yml"
           target: "/opt/"
 
       - name: Deploy stack
